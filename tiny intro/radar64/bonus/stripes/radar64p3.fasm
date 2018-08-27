@@ -1,0 +1,65 @@
+; ----------------------------------------------------------------------------------------------
+; Radar 64b intro [bonus variant P3 - with cyan striped radar] (c) 2018 by Jin X (jin_x@list.ru)
+; ----------------------------------------------------------------------------------------------
+
+video_shift	=	10h			; we use 9FFFh segment for video output instead of 0A000h
+radar_radius	=	64			; should be multiple of circles_step for the best effect (doesn't matter in striped radar variant)
+radbg_color	=	12h			; [radar background color]
+arrow_color	=	21h			; should be more than radbg_color
+circles_color	=	3			; should be less than radbg_color
+;circles_step	=	10h			; should be power of 2 for the best effect
+
+use16
+org	100h
+
+start:
+
+;include 'initregs.inc'				; for Turbo Debugger ;))
+
+		; ax=bx=0 (if no cmd line params), cx=0FFh, dx=cs=ds=es=ss, si=100h, di=sp=0FFFEh (as a rule), bp=91Xh, flags=7202h or 0202h (all base flags including cf=0; if=1)
+		; Init
+		mov	al,13h
+		int	10h
+		fild	qword [si]
+		lds	ax,[bx]			; ds=9FFFh (as a rule), ax=020CDh
+		fptan				; st0=1=angle, st1=delta (we need about 0.02)
+
+		; Sound timer setup
+;		mov	al,10100110b		; 2nd timer channel control word (set only high byte of counter), you may try to set lowest bit to 1 to increase sound frequency :)
+;		out	43h,al
+;		out	42h,al
+
+		; Main cycle			; di=sp=0FFFEh, ds=9FFFh
+	.repeat:
+		; Fadeout
+	@@:	add	[di],dh
+		sbb	[di],dh			; for source [di]=0 result=0, cf=0
+		inc	di
+		jnz	@B			; di=0, cf=0 (cos [0FFFFh]=0)
+
+		; Radar
+		mov	cl,radar_radius
+	.next:	fld	st
+		fsincos				; st0=cos(angle), st1=sin(angle), st2=angle, st3=delta
+	@@:	mov	[di],cx
+		fild	word [di]
+		fmulp				; cx*cos then cs*sin
+		fistp	word [di]
+		mov	ax,[di]
+		xchg	bx,ax
+		out	61h,al			; sound
+		cmc
+		jc	@B			; second pass (it's was cos, next time it will be sin)
+		; st0=angle, st1=delta
+		imul	si,ax,320
+		mov	dx,arrow_color + (not radbg_color)*256
+		test	cl,cl			; cf=0
+		jp	@F			; you may try to switch between 'jp' and 'jnp'
+		mov	dl,circles_color
+	@@:	mov	byte [bx+si+(160+100*320)+video_shift],dl
+		loop	.next
+
+		loop	$			; a little delay :)
+
+		fadd	st,st1			; increase angle a tiny bit
+		jmp	.repeat			; dh=not radbg_color
