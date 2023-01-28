@@ -49,21 +49,9 @@ Intro starts at `CODE_ADDRESS` (0x10000000) with the following register values:
 
 
 
-# Control, memoryControl, memory and miscellaneous functions
+## Control, memoryControl, memory and miscellaneous functions
 
-## Control, memory and miscellaneous functions
-
-### Control, memory and miscellaneous functions
-
-#### Control, memory and miscellaneous functions
-
-##### Control, memory and miscellaneous functions
-
-###### Control, memory and miscellaneous functions
-
-
-
-##### #0 @Exit() — exit intro.
+#### #0 @Exit() — exit intro.
 
 The same as `ret` instruction from the main thread.
 
